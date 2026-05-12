@@ -1,0 +1,2453 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHOST CITY ESCAPE | Psychological Horror</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        void: '#030308',
+                        nightmare: '#0a0408',
+                        blood: '#6b0000',
+                        crimson: '#8b0000',
+                        spectral: '#c8d0e0',
+                        cursed: '#1a0a2e',
+                        bone: '#d4c5b2',
+                        rot: '#2a1a0a',
+                        whisper: '#8899bb',
+                        shadow: '#060610',
+                        dread: '#0d0202',
+                    },
+                    fontFamily: {
+                        horror: ['"Special Elite"', 'cursive'],
+                        display: ['"Cinzel"', 'serif'],
+                        ui: ['"Rajdhani"', 'sans-serif'],
+                        journal: ['"Crimson Text"', 'serif'],
+                    },
+                    animation: {
+                        'pulse-dread': 'pulse 4s cubic-bezier(0.4,0,0.6,1) infinite',
+                        'flicker-fast': 'flicker 0.08s infinite alternate',
+                        'float-ghost': 'floatGhost 6s ease-in-out infinite',
+                        'breath-fear': 'breathFear 3s ease-in-out infinite',
+                        'glitch-text': 'glitchText 0.4s ease-in-out infinite',
+                        'shake-cam': 'shakeCam 0.6s ease-out',
+                        'fade-up': 'fadeUp 0.8s ease-out forwards',
+                        'scan': 'scanLine 8s linear infinite',
+                        'vignette-pulse': 'vignettePulse 2.5s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        flicker: {
+                            '0%,100%': { opacity: '1' },
+                            '50%': { opacity: '0.25' },
+                        },
+                        floatGhost: {
+                            '0%,100%': { transform: 'translateY(0) scale(1)' },
+                            '50%': { transform: 'translateY(-20px) scale(1.04)' },
+                        },
+                        breathFear: {
+                            '0%,100%': { transform: 'scale(1) rotate(0deg)' },
+                            '25%': { transform: 'scale(1.008) rotate(0.3deg)' },
+                            '75%': { transform: 'scale(0.992) rotate(-0.3deg)' },
+                        },
+                        glitchText: {
+                            '0%,100%': { transform: 'translate(0)' },
+                            '20%': { transform: 'translate(-4px,2px)' },
+                            '40%': { transform: 'translate(4px,-1px)' },
+                            '60%': { transform: 'translate(-2px,-3px)' },
+                            '80%': { transform: 'translate(3px,1px)' },
+                        },
+                        shakeCam: {
+                            '0%,100%': { transform: 'translate(0,0)' },
+                            '10%': { transform: 'translate(-6px,3px)' },
+                            '30%': { transform: 'translate(7px,-4px)' },
+                            '50%': { transform: 'translate(-3px,-5px)' },
+                            '70%': { transform: 'translate(5px,2px)' },
+                            '90%': { transform: 'translate(-4px,-1px)' },
+                        },
+                        fadeUp: {
+                            '0%': { opacity: '0', transform: 'translateY(30px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        scanLine: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100vh)' },
+                        },
+                        vignettePulse: {
+                            '0%,100%': { opacity: '0.55' },
+                            '50%': { opacity: '0.75' },
+                        },
+                    },
+                },
+            },
+        };
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Rajdhani:wght@300;400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+
+    <!-- style.css -->
+    <style>
+        /* ==================== ROOT VARIABLES ==================== */
+        :root {
+            --bg-void: #030308;
+            --fg-spectral: #c8d0e0;
+            --accent-blood: #6b0000;
+            --accent-curse: #4a2080;
+            --overlay-black: rgba(0, 0, 0, 0.92);
+            --transition-cine: cubic-bezier(0.22, 0.61, 0.36, 1);
+            --glow-spectral: 0 0 40px rgba(180, 160, 220, 0.35);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Rajdhani', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            height: 100vh;
+            width: 100vw;
+            cursor: none;
+        }
+
+        /* Canvas */
+        #game-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            display: block;
+        }
+
+        /* UI Layer */
+        #ui-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+        #ui-layer>* {
+            pointer-events: auto;
+        }
+        #ui-layer .no-interact {
+            pointer-events: none;
+        }
+
+        /* Vignette */
+        #vignette-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 5;
+            pointer-events: none;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.85) 100%);
+            transition: opacity 3s ease;
+            animation: vignettePulse 2.5s ease-in-out infinite;
+        }
+
+        /* Blood vignette on damage */
+        #blood-vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 6;
+            pointer-events: none;
+            opacity: 0;
+            background: radial-gradient(circle at center, rgba(100, 0, 0, 0.3) 0%, rgba(60, 0, 0, 0.05) 45%, transparent 65%);
+            transition: opacity 0.35s ease;
+        }
+
+        /* Scanlines */
+        #scanlines {
+            position: fixed;
+            inset: 0;
+            z-index: 7;
+            pointer-events: none;
+            opacity: 0.04;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.55) 2px, rgba(0, 0, 0, 0.55) 4px);
+        }
+
+        /* HUD Container */
+        #hud-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 15;
+            pointer-events: none;
+            padding: 0 1.5rem 1.2rem;
+        }
+
+        /* Sanity bar special */
+        .sanity-fill {
+            background: linear-gradient(90deg, #2a1050, #6b3fa0, #c44dff);
+            transition: width 0.8s ease;
+        }
+        .battery-fill {
+            background: linear-gradient(90deg, #1a3a0a, #4a8a20, #7acc40);
+            transition: width 0.5s ease;
+        }
+        .heartbeat-fill {
+            background: linear-gradient(90deg, #3a0000, #8b0000, #cc2222);
+            transition: width 0.3s ease;
+            animation: heartbeatPulse 0.8s ease-in-out infinite;
+        }
+        @keyframes heartbeatPulse {
+            0%,
+            100% {
+                filter: brightness(1);
+            }
+            50% {
+                filter: brightness(1.5);
+            }
+        }
+
+        /* Bar base */
+        .bar-track {
+            height: 6px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+        }
+        .bar-fill-inner {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        /* Crosshair - subtle horror style */
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 16;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        #crosshair .ch-dot {
+            width: 4px;
+            height: 4px;
+            background: rgba(220, 210, 200, 0.7);
+            border-radius: 50%;
+            margin: 0 auto;
+            box-shadow: 0 0 8px rgba(200, 180, 220, 0.5);
+        }
+        #crosshair .ch-line {
+            width: 18px;
+            height: 1px;
+            background: rgba(220, 210, 200, 0.35);
+            margin: 1px 0;
+        }
+
+        /* Modal overlay */
+        .modal-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(12px);
+            transition: opacity 0.6s ease;
+        }
+        .modal-panel {
+            background: rgba(8, 5, 15, 0.94);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2.5rem;
+            max-width: 580px;
+            width: 92%;
+            box-shadow: 0 0 100px rgba(80, 40, 140, 0.2), 0 30px 70px rgba(0, 0, 0, 0.8);
+            text-align: center;
+        }
+
+        /* Toast notification */
+        .toast-notify {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 70;
+            background: rgba(15, 5, 25, 0.92);
+            border: 1px solid rgba(180, 140, 220, 0.4);
+            border-radius: 10px;
+            padding: 0.9rem 2rem;
+            color: #d4c5b2;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            pointer-events: none;
+            animation: toastSlideIn 0.5s ease, toastSlideOut 0.5s ease 3s forwards;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        @keyframes toastSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-35px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        @keyframes toastSlideOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-25px);
+            }
+        }
+
+        /* Artifact discovery glow */
+        .artifact-glow {
+            animation: artifactPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes artifactPulse {
+            0%,
+            100% {
+                box-shadow: 0 0 30px rgba(200, 160, 40, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 60px rgba(220, 180, 60, 0.8), 0 0 120px rgba(180, 120, 40, 0.3);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .modal-panel {
+                padding: 1.5rem;
+                max-width: 95%;
+            }
+            #hud-container {
+                padding: 0 0.8rem 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== THREE.JS CANVAS ==================== -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- ==================== VISUAL OVERLAYS ==================== -->
+    <div id="vignette-overlay"></div>
+    <div id="blood-vignette"></div>
+    <div id="scanlines"></div>
+
+    <!-- ==================== CROSSHAIR ==================== -->
+    <div id="crosshair">
+        <div class="ch-line"></div>
+        <div class="ch-dot"></div>
+        <div class="ch-line"></div>
+    </div>
+
+    <!-- ==================== UI LAYER ==================== -->
+    <div id="ui-layer">
+
+        <!-- HUD -->
+        <div id="hud-container" class="hidden">
+            <div class="flex items-end justify-between w-full max-w-5xl mx-auto gap-3">
+                <!-- Heartbeat / Health -->
+                <div class="flex-1 min-w-[70px]">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-[0.2em] mb-1 font-ui">Heart</p>
+                    <div class="bar-track">
+                        <div id="heartbeat-bar" class="bar-fill-inner heartbeat-fill" style="width:100%"></div>
+                    </div>
+                </div>
+                <!-- Sanity -->
+                <div class="flex-1 min-w-[70px]">
+                    <p class="text-[10px] text-purple-400 uppercase tracking-[0.2em] mb-1 font-ui">Sanity</p>
+                    <div class="bar-track">
+                        <div id="sanity-bar" class="bar-fill-inner sanity-fill" style="width:100%"></div>
+                    </div>
+                </div>
+                <!-- Battery -->
+                <div class="flex-1 min-w-[70px]">
+                    <p class="text-[10px] text-green-400 uppercase tracking-[0.2em] mb-1 font-ui">Battery</p>
+                    <div class="bar-track">
+                        <div id="battery-bar" class="bar-fill-inner battery-fill" style="width:100%"></div>
+                    </div>
+                </div>
+                <!-- Chapter -->
+                <div class="text-right min-w-[80px]">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-ui">Chapter</p>
+                    <p id="chapter-display" class="text-xl font-bold text-spectral font-display">I</p>
+                </div>
+                <!-- Clues -->
+                <div class="text-right min-w-[60px]">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-ui">Clues</p>
+                    <p id="clues-display" class="text-lg font-bold text-amber-400 font-display">0</p>
+                </div>
+            </div>
+            <!-- Interaction prompt -->
+            <div id="interact-hint" class="text-center mt-2 hidden">
+                <span class="text-xs text-amber-300 bg-black/70 px-3 py-1 rounded-full animate-pulse-dread font-ui tracking-wider">[E] INTERACT</span>
+            </div>
+            <!-- Fear whisper indicator -->
+            <div id="fear-indicator" class="text-center mt-1 hidden">
+                <span class="text-[10px] text-red-400/70 font-horror tracking-widest animate-flicker-fast">SOMETHING WATCHES</span>
+            </div>
+        </div>
+
+        <!-- ==================== MAIN MENU ==================== -->
+        <div id="main-menu" class="modal-screen">
+            <div class="modal-panel">
+                <h1 class="text-5xl md:text-7xl font-display font-black text-spectral tracking-[0.15em] mb-1" style="text-shadow:0 0 60px rgba(160,130,220,0.5),0 0 120px rgba(100,60,160,0.3);">
+                    GHOST CITY
+                </h1>
+                <p class="text-lg text-red-500/80 font-horror tracking-[0.3em] mb-8 animate-pulse-dread">ESCAPE</p>
+                <div class="flex flex-col gap-3 items-center">
+                    <button id="btn-start" class="w-60 py-3.5 bg-crimson hover:bg-red-800 text-white font-bold text-lg rounded-xl tracking-[0.15em] transition-all duration-400 hover:scale-105 shadow-2xl shadow-red-950/60 font-display">
+                        ENTER THE DARK
+                    </button>
+                    <button id="btn-continue-save" class="w-60 py-3 bg-transparent border border-amber-700/50 text-amber-400 hover:bg-amber-950/30 font-bold text-lg rounded-xl tracking-[0.15em] transition-all duration-400 hover:scale-105 font-display hidden">
+                        CONTINUE JOURNEY
+                    </button>
+                    <button id="btn-artifact-collection" class="w-60 py-2.5 bg-transparent border border-purple-700/40 text-purple-300 hover:bg-purple-950/20 font-semibold text-base rounded-xl tracking-[0.1em] transition-all duration-400 hover:scale-105 font-display">
+                        ARTIFACTS
+                    </button>
+                    <button id="btn-how-to-play" class="w-60 py-2 text-gray-500 hover:text-gray-300 text-sm transition-colors font-ui tracking-wider">
+                        HOW TO PLAY
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-600 mt-5 font-ui tracking-wider">WASD MOVE · MOUSE LOOK · SHIFT SPRINT · CTRL CROUCH · SPACE JUMP · F FLASHLIGHT · E INTERACT · TAB JOURNAL</p>
+            </div>
+        </div>
+
+        <!-- ==================== HOW TO PLAY ==================== -->
+        <div id="how-to-play-modal" class="modal-screen hidden">
+            <div class="modal-panel text-left max-w-lg">
+                <h2 class="text-3xl font-display font-bold text-spectral mb-6 text-center">SURVIVAL GUIDE</h2>
+                <div class="space-y-3 text-gray-300 font-ui text-sm leading-relaxed">
+                    <p><span class="text-amber-400 font-bold">Objective:</span> Explore the cursed world, discover clues, and uncover the truth behind the supernatural events.</p>
+                    <p><span class="text-purple-400 font-bold">Sanity:</span> Staying in darkness too long drains your sanity. Low sanity attracts more ghosts and causes hallucinations.</p>
+                    <p><span class="text-green-400 font-bold">Battery:</span> Your flashlight has limited battery. Find batteries scattered across the world.</p>
+                    <p><span class="text-red-400 font-bold">Ghosts:</span> They are real. They watch. They hunt. Hide, run, or use artifacts to survive.</p>
+                    <p><span class="text-amber-300 font-bold">Clues:</span> Discover hidden clues to unlock story chapters and reveal endings.</p>
+                    <p class="text-gray-500 italic">There are multiple endings. Your choices matter.</p>
+                </div>
+                <button id="btn-close-how" class="mt-6 w-full py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold tracking-wider transition-all font-display">CLOSE</button>
+            </div>
+        </div>
+
+        <!-- ==================== PAUSE MENU ==================== -->
+        <div id="pause-menu" class="modal-screen hidden">
+            <div class="modal-panel">
+                <h2 class="text-4xl font-display font-bold text-spectral mb-8">PAUSED</h2>
+                <div class="flex flex-col gap-3 items-center">
+                    <button id="btn-resume" class="w-52 py-3 bg-green-900 hover:bg-green-800 text-white font-bold rounded-xl tracking-wider transition-all font-display">RESUME</button>
+                    <button id="btn-quit-menu" class="w-52 py-3 bg-crimson hover:bg-red-800 text-white font-bold rounded-xl tracking-wider transition-all font-display">QUIT TO MENU</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== JOURNAL / CLUES ==================== -->
+        <div id="journal-modal" class="modal-screen hidden">
+            <div class="modal-panel text-left max-w-lg max-h-[80vh] overflow-y-auto">
+                <h2 class="text-3xl font-display font-bold text-spectral mb-4 text-center">JOURNAL</h2>
+                <div id="journal-entries" class="space-y-3 text-gray-300 font-journal text-sm">
+                    <p class="text-gray-500 italic">No clues discovered yet...</p>
+                </div>
+                <button id="btn-close-journal" class="mt-5 w-full py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold tracking-wider transition-all font-display">CLOSE</button>
+            </div>
+        </div>
+
+        <!-- ==================== ARTIFACT COLLECTION ==================== -->
+        <div id="artifact-modal" class="modal-screen hidden">
+            <div class="modal-panel max-w-lg max-h-[80vh] overflow-y-auto">
+                <h2 class="text-3xl font-display font-bold text-amber-400 mb-4">CURSED ARTIFACTS</h2>
+                <div id="artifact-grid" class="grid grid-cols-3 gap-3">
+                    <p class="col-span-3 text-gray-500 italic text-sm">No artifacts found... Explore the world to discover them.</p>
+                </div>
+                <button id="btn-close-artifacts" class="mt-5 w-full py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold tracking-wider transition-all font-display">CLOSE</button>
+            </div>
+        </div>
+
+        <!-- ==================== ARTIFACT DISCOVERY MODAL ==================== -->
+        <div id="artifact-discovery-modal" class="modal-screen hidden">
+            <div class="modal-panel relative overflow-hidden">
+                <div id="discovery-particles" class="absolute inset-0 pointer-events-none"></div>
+                <h2 class="text-3xl font-display font-bold text-amber-300 mb-2 relative z-10">ARTIFACT DISCOVERED</h2>
+                <div id="discovery-artifact-icon" class="text-7xl mb-3 relative z-10 artifact-glow inline-block rounded-full p-4">🔮</div>
+                <p id="discovery-artifact-name" class="text-xl font-bold text-spectral font-display relative z-10">Spirit Lantern</p>
+                <p id="discovery-artifact-rarity" class="text-sm text-purple-400 font-ui mb-4 relative z-10">✦ RARE ✦</p>
+                <p id="discovery-artifact-desc" class="text-xs text-gray-400 font-ui mb-5 relative z-10">A lantern that reveals hidden spirits.</p>
+                <button id="btn-collect-artifact" class="w-48 py-3 bg-amber-800 hover:bg-amber-700 text-white font-bold rounded-xl tracking-wider transition-all font-display relative z-10">COLLECT</button>
+            </div>
+        </div>
+
+        <!-- ==================== STORY CHAPTER REVEAL ==================== -->
+        <div id="chapter-reveal-modal" class="modal-screen hidden">
+            <div class="modal-panel">
+                <h2 class="text-4xl font-display font-black text-spectral mb-3 animate-fade-up" style="text-shadow:0 0 50px rgba(180,150,220,0.6);">NEW CHAPTER</h2>
+                <p id="chapter-reveal-title" class="text-2xl font-display font-bold text-amber-300 mb-2">The Awakening</p>
+                <p id="chapter-reveal-desc" class="text-gray-400 font-journal text-sm mb-6">You have begun to remember...</p>
+                <button id="btn-continue-chapter" class="w-48 py-3 bg-purple-800 hover:bg-purple-700 text-white font-bold rounded-xl tracking-wider transition-all font-display">CONTINUE</button>
+            </div>
+        </div>
+
+        <!-- ==================== DEATH SCREEN ==================== -->
+        <div id="death-screen" class="modal-screen hidden">
+            <div class="modal-panel">
+                <h2 class="text-5xl font-display font-black text-red-500 mb-3 animate-shake-cam">CONSUMED</h2>
+                <p class="text-gray-400 font-journal mb-2">The darkness has claimed you...</p>
+                <p id="death-hint" class="text-xs text-gray-500 font-ui mb-6">But the story is not over.</p>
+                <button id="btn-retry" class="w-52 py-3 bg-crimson hover:bg-red-800 text-white font-bold rounded-xl tracking-wider transition-all font-display">RISE AGAIN</button>
+            </div>
+        </div>
+
+        <!-- ==================== LOADING SCREEN ==================== -->
+        <div id="loading-screen" class="modal-screen">
+            <div class="modal-panel">
+                <h2 class="text-3xl font-display font-bold text-spectral mb-5 animate-breath-fear">ENTERING THE CURSED REALM</h2>
+                <div class="w-full h-2 bg-gray-900 rounded-full overflow-hidden">
+                    <div id="loading-bar-fill" class="h-full bg-purple-700 rounded-full transition-all duration-500" style="width:0%"></div>
+                </div>
+                <p id="loading-status" class="text-gray-500 text-sm mt-4 font-ui">Summoning shadows...</p>
+            </div>
+        </div>
+
+    </div>
+    <!-- END UI-LAYER -->
+
+    <!-- ==================== THREE.JS CDN ==================== -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js">
+    </script>
+
+    <!-- ==================== SCRIPT.JS ==================== -->
+    <script>
+        // ================================================================
+        //  GHOST CITY ESCAPE - Premium Psychological Horror Game
+        //  Open World | Story Chapters | Terrifying Ghost AI | Artifacts
+        // ================================================================
+
+        (function() {
+            // ==================== DOM REFERENCES ====================
+            const canvas = document.getElementById('game-canvas');
+            const bloodVignette = document.getElementById('blood-vignette');
+            const vignetteOverlay = document.getElementById('vignette-overlay');
+            const crosshair = document.getElementById('crosshair');
+            const hudContainer = document.getElementById('hud-container');
+            const heartbeatBar = document.getElementById('heartbeat-bar');
+            const sanityBar = document.getElementById('sanity-bar');
+            const batteryBar = document.getElementById('battery-bar');
+            const chapterDisplay = document.getElementById('chapter-display');
+            const cluesDisplay = document.getElementById('clues-display');
+            const interactHint = document.getElementById('interact-hint');
+            const fearIndicator = document.getElementById('fear-indicator');
+            const loadingScreen = document.getElementById('loading-screen');
+            const loadingBarFill = document.getElementById('loading-bar-fill');
+            const loadingStatus = document.getElementById('loading-status');
+            const journalEntries = document.getElementById('journal-entries');
+            const artifactGrid = document.getElementById('artifact-grid');
+            const mainMenu = document.getElementById('main-menu');
+            const btnContinueSave = document.getElementById('btn-continue-save');
+
+            // ==================== GAME STATE ====================
+            const GameState = {
+                isPlaying: false,
+                isPaused: false,
+                isDead: false,
+                health: 100,
+                maxHealth: 100,
+                sanity: 100,
+                maxSanity: 100,
+                stamina: 100,
+                maxStamina: 100,
+                battery: 100,
+                maxBattery: 100,
+                flashlightOn: false,
+                currentChapter: 1, // 1-5
+                unlockedChapters: [1],
+                cluesFound: [],
+                artifactsCollected: [],
+                totalCluesDiscovered: 0,
+                ghostEncounters: 0,
+                timeInDarkness: 0,
+                playerNoise: 0,
+                endingFlags: {},
+                gameTime: 0,
+            };
+
+            // ==================== SAVE SYSTEM ====================
+            const SaveSystem = {
+                saveKey: 'ghost_city_escape_save_v2',
+                save() {
+                    const data = {
+                        chapter: GameState.currentChapter,
+                        unlockedChapters: GameState.unlockedChapters,
+                        cluesFound: GameState.cluesFound,
+                        artifactsCollected: GameState.artifactsCollected,
+                        totalCluesDiscovered: GameState.totalCluesDiscovered,
+                        ghostEncounters: GameState.ghostEncounters,
+                        endingFlags: GameState.endingFlags,
+                        gameTime: GameState.gameTime,
+                    };
+                    try {
+                        localStorage.setItem(this.saveKey, JSON.stringify(data));
+                    } catch (e) {
+                        console.warn('Save failed:', e);
+                    }
+                },
+                load() {
+                    try {
+                        const raw = localStorage.getItem(this.saveKey);
+                        if (raw) {
+                            const data = JSON.parse(raw);
+                            GameState.currentChapter = data.chapter || 1;
+                            GameState.unlockedChapters = data.unlockedChapters || [1];
+                            GameState.cluesFound = data.cluesFound || [];
+                            GameState.artifactsCollected = data.artifactsCollected || [];
+                            GameState.totalCluesDiscovered = data.totalCluesDiscovered || 0;
+                            GameState.ghostEncounters = data.ghostEncounters || 0;
+                            GameState.endingFlags = data.endingFlags || {};
+                            GameState.gameTime = data.gameTime || 0;
+                            return true;
+                        }
+                    } catch (e) {
+                        console.warn('Load failed:', e);
+                    }
+                    return false;
+                },
+                hasSave() {
+                    return !!localStorage.getItem(this.saveKey);
+                },
+                reset() {
+                    localStorage.removeItem(this.saveKey);
+                    GameState.currentChapter = 1;
+                    GameState.unlockedChapters = [1];
+                    GameState.cluesFound = [];
+                    GameState.artifactsCollected = [];
+                    GameState.totalCluesDiscovered = 0;
+                    GameState.ghostEncounters = 0;
+                    GameState.endingFlags = {};
+                    GameState.gameTime = 0;
+                },
+            };
+
+            // ==================== AUDIO MANAGER ====================
+            class AudioManager {
+                constructor() {
+                    this.ctx = null;
+                    this.masterGain = null;
+                    this.initialized = false;
+                    this.activeOscillators = [];
+                    this.ambientNodes = [];
+                }
+
+                init() {
+                    if (this.initialized) return;
+                    try {
+                        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        this.masterGain = this.ctx.createGain();
+                        this.masterGain.gain.value = 0.4;
+                        this.masterGain.connect(this.ctx.destination);
+                        this.initialized = true;
+                    } catch (e) {
+                        console.warn('Audio not available:', e);
+                    }
+                }
+
+                playAmbientDrone(baseFreq = 38, wobble = 6) {
+                    if (!this.initialized) return;
+                    this.stopAmbient();
+                    const osc1 = this.ctx.createOscillator();
+                    const osc2 = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const filter = this.ctx.createBiquadFilter();
+                    osc1.type = 'sawtooth';
+                    osc1.frequency.value = baseFreq;
+                    osc1.detune.value = -wobble;
+                    osc2.type = 'sawtooth';
+                    osc2.frequency.value = baseFreq + 2;
+                    osc2.detune.value = wobble;
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 150;
+                    filter.Q.value = 2;
+                    gain.gain.value = 0.05;
+                    osc1.connect(filter);
+                    osc2.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.masterGain);
+                    osc1.start();
+                    osc2.start();
+                    this.ambientNodes = [osc1, osc2, gain, filter];
+                }
+
+                stopAmbient() {
+                    this.ambientNodes.forEach(node => {
+                        try {
+                            if (node.stop) node.stop(this.ctx.currentTime + 0.4);
+                        } catch (e) {}
+                    });
+                    this.ambientNodes = [];
+                }
+
+                playFootstep(surface = 'dirt') {
+                    if (!this.initialized) return;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const filter = this.ctx.createBiquadFilter();
+                    osc.type = 'triangle';
+                    osc.frequency.value = surface === 'stone' ? 70 + Math.random() * 30 : 40 + Math.random() *
+                        35;
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 200;
+                    filter.Q.value = 1.5;
+                    gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.masterGain);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.12);
+                }
+
+                playWhisper() {
+                    if (!this.initialized) return;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const filter = this.ctx.createBiquadFilter();
+                    osc.type = 'sine';
+                    osc.frequency.value = 250 + Math.random() * 500;
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 400 + Math.random() * 600;
+                    filter.Q.value = 8;
+                    gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 2);
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.masterGain);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 2.1);
+                }
+
+                playHeartbeat() {
+                    if (!this.initialized) return;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = 55;
+                    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.masterGain);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.4);
+                }
+
+                playJumpScare() {
+                    if (!this.initialized) return;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(900, this.ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(80, this.ctx.currentTime + 0.5);
+                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.6);
+                    osc.connect(gain);
+                    gain.connect(this.masterGain);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.65);
+                }
+
+                playArtifactDiscovery() {
+                    if (!this.initialized) return;
+                    [330, 440, 554, 660, 880].forEach((freq, i) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0, this.ctx.currentTime + i * 0.12);
+                        gain.gain.linearRampToValueAtTime(0.08, this.ctx.currentTime + i * 0.12 + 0.04);
+                        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + i * 0.12 + 0.5);
+                        osc.connect(gain);
+                        gain.connect(this.masterGain);
+                        osc.start(this.ctx.currentTime + i * 0.12);
+                        osc.stop(this.ctx.currentTime + i * 0.12 + 0.55);
+                    });
+                }
+
+                playGhostPresence() {
+                    if (!this.initialized) return;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 3);
+                    gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 3);
+                    osc.connect(gain);
+                    gain.connect(this.masterGain);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 3.1);
+                }
+
+                dispose() {
+                    this.stopAmbient();
+                    if (this.ctx) { this.ctx.close().catch(() => {});
+                        this.initialized = false; }
+                }
+            }
+
+            const audioManager = new AudioManager();
+
+            // ==================== SCENE MANAGER ====================
+            class SceneManager {
+                constructor() {
+                    this.scene = null;
+                    this.camera = null;
+                    this.renderer = null;
+                    this.clock = new THREE.Clock();
+                    this.deltaTime = 0;
+                    this.elapsedTime = 0;
+                    this.flashlight = null;
+                    this.flashlightTarget = null;
+                    this.directionalLight = null;
+                    this.ambientLight = null;
+                    this.environmentObjects = [];
+                    this.collidableMeshes = [];
+                    this.clueObjects = [];
+                    this.artifactObjects = [];
+                    this.ghosts = [];
+                    this.particleSystems = [];
+                    this.fogTarget = new THREE.Color(0x060610);
+                }
+
+                init() {
+                    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false,
+                        powerPreference: 'high-performance' });
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                    this.renderer.shadowMap.enabled = true;
+                    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                    this.renderer.toneMappingExposure = 0.7;
+                    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+                    this.scene = new THREE.Scene();
+                    this.scene.background = new THREE.Color(0x030308);
+                    this.scene.fog = new THREE.FogExp2(0x060610, 0.00018);
+
+                    // Camera
+                    this.camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.12, 150);
+                    this.camera.position.set(0, 1.75, 6);
+                    this.camera.lookAt(0, 1.5, 0);
+
+                    // Ambient
+                    this.ambientLight = new THREE.AmbientLight(0x111122, 0.35);
+                    this.scene.add(this.ambientLight);
+
+                    // Directional (moon)
+                    this.directionalLight = new THREE.DirectionalLight(0x7788aa, 0.5);
+                    this.directionalLight.position.set(40, 50, -30);
+                    this.directionalLight.castShadow = true;
+                    this.directionalLight.shadow.mapSize.set(2048, 2048);
+                    this.directionalLight.shadow.camera.near = 0.3;
+                    this.directionalLight.shadow.camera.far = 180;
+                    this.directionalLight.shadow.camera.left = -70;
+                    this.directionalLight.shadow.camera.right = 70;
+                    this.directionalLight.shadow.camera.top = 70;
+                    this.directionalLight.shadow.camera.bottom = -70;
+                    this.directionalLight.shadow.bias = -0.00008;
+                    this.scene.add(this.directionalLight);
+
+                    // Flashlight
+                    this.flashlightTarget = new THREE.Object3D();
+                    this.flashlightTarget.position.set(0, 0, -18);
+                    this.scene.add(this.flashlightTarget);
+                    this.flashlight = new THREE.SpotLight(0xffeedd, 35, 40, Math.PI / 7, 0.35, 1.2);
+                    this.flashlight.position.copy(this.camera.position);
+                    this.flashlight.target = this.flashlightTarget;
+                    this.flashlight.castShadow = true;
+                    this.flashlight.shadow.mapSize.set(512, 512);
+                    this.flashlight.shadow.camera.near = 0.15;
+                    this.flashlight.shadow.camera.far = 45;
+                    this.flashlight.visible = false;
+                    this.scene.add(this.flashlight);
+
+                    // Ground fog layer
+                    const fogGeo = new THREE.PlaneGeometry(300, 300);
+                    const fogMat = new THREE.ShaderMaterial({
+                        uniforms: {
+                            uTime: { value: 0 },
+                            uColor: { value: new THREE.Color(0x0a0818) },
+                        },
+                        vertexShader: `
+                    varying vec2 vUv;
+                    void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+                        fragmentShader: `
+                    varying vec2 vUv;
+                    uniform float uTime;
+                    uniform vec3 uColor;
+                    void main(){
+                      float d=length(vUv-0.5)*2.0;
+                      float a=smoothstep(1.0,0.0,d)*0.22;
+                      a*=0.5+0.5*sin(vUv.x*12.0+uTime*0.25)*cos(vUv.y*10.0+uTime*0.35);
+                      gl_FragColor=vec4(uColor,a);
+                    }`,
+                        transparent: true,
+                        depthWrite: false,
+                    });
+                    const fogPlane = new THREE.Mesh(fogGeo, fogMat);
+                    fogPlane.rotation.x = -Math.PI / 2;
+                    fogPlane.position.y = 0.1;
+                    fogPlane.renderOrder = 998;
+                    fogPlane.name = 'groundFog';
+                    this.scene.add(fogPlane);
+
+                    // Stars
+                    const starsGeo = new THREE.BufferGeometry();
+                    const starCount = 800;
+                    const starPos = new Float32Array(starCount * 3);
+                    for (let i = 0; i < starCount; i++) {
+                        starPos[i * 3] = (Math.random() - 0.5) * 200;
+                        starPos[i * 3 + 1] = 28 + Math.random() * 70;
+                        starPos[i * 3 + 2] = (Math.random() - 0.5) * 200;
+                    }
+                    starsGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+                    const starsMat = new THREE.PointsMaterial({ color: 0xaaaacc, size: 0.06, transparent: true,
+                        opacity: 0.65, depthWrite: false });
+                    const stars = new THREE.Points(starsGeo, starsMat);
+                    stars.name = 'stars';
+                    this.scene.add(stars);
+
+                    window.addEventListener('resize', () => {
+                        this.camera.aspect = window.innerWidth / window.innerHeight;
+                        this.camera.updateProjectionMatrix();
+                        this.renderer.setSize(window.innerWidth, window.innerHeight);
+                    });
+
+                    return this;
+                }
+
+                updateFogShader(time) {
+                    const fp = this.scene.getObjectByName('groundFog');
+                    if (fp && fp.material.uniforms) fp.material.uniforms.uTime.value = time;
+                }
+
+                clearWorld() {
+                    this.environmentObjects.forEach(o => {
+                        if (o.parent) o.parent.remove(o);
+                        if (o.geometry) o.geometry.dispose();
+                        if (o.material) {
+                            if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+                            else o.material.dispose();
+                        }
+                    });
+                    this.environmentObjects = [];
+                    this.collidableMeshes = [];
+                    this.clueObjects.forEach(c => {
+                        if (c.mesh && c.mesh.parent) c.mesh.parent.remove(c.mesh);
+                    });
+                    this.clueObjects = [];
+                    this.artifactObjects.forEach(a => {
+                        if (a.mesh && a.mesh.parent) a.mesh.parent.remove(a.mesh);
+                    });
+                    this.artifactObjects = [];
+                    this.ghosts.forEach(g => g.dispose());
+                    this.ghosts = [];
+                    this.particleSystems.forEach(p => {
+                        if (p.parent) p.parent.remove(p);
+                        if (p.geometry) p.geometry.dispose();
+                        if (p.material) p.material.dispose();
+                    });
+                    this.particleSystems = [];
+                }
+
+                generateOpenWorld() {
+                    this.clearWorld();
+                    const env = new WorldBuilder(this);
+                    env.buildForestArea(); // Central & surrounding
+                    env.buildFortArea(); // North
+                    env.buildHalloweenDistrict(); // East
+                    env.placeCluesAndArtifacts();
+                    this.spawnInitialGhosts();
+                }
+
+                spawnInitialGhosts() {
+                    const count = 5 + GameState.ghostEncounters;
+                    for (let i = 0; i < count; i++) {
+                        const ghost = new GhostEntity(this, GameState.currentChapter);
+                        this.ghosts.push(ghost);
+                    }
+                }
+
+                updateFlashlight() {
+                    if (this.flashlight && this.flashlight.visible) {
+                        this.flashlight.position.copy(this.camera.position);
+                        const dir = new THREE.Vector3();
+                        this.camera.getWorldDirection(dir);
+                        this.flashlightTarget.position.copy(this.camera.position).add(dir.multiplyScalar(
+                        18));
+                        this.flashlight.target = this.flashlightTarget;
+                    }
+                }
+
+                render() {
+                    this.deltaTime = Math.min(this.clock.getDelta(), 0.12);
+                    this.elapsedTime += this.deltaTime;
+                    this.updateFogShader(this.elapsedTime);
+                    this.updateFlashlight();
+                    this.ghosts.forEach(g => g.update(this.deltaTime, this.camera.position, this));
+                    this.clueObjects.forEach(c => {
+                        c.mesh.rotation.y += this.deltaTime * 0.8;
+                        c.mesh.position.y += Math.sin(this.elapsedTime * 2.5 + c.mesh.position.x) * this
+                            .deltaTime * 0.5;
+                    });
+                    this.artifactObjects.forEach(a => {
+                        a.mesh.rotation.y += this.deltaTime * 1.1;
+                        a.mesh.position.y += Math.sin(this.elapsedTime * 2 + a.mesh.position.z) * this
+                            .deltaTime * 0.6;
+                    });
+                    this.particleSystems.forEach(p => {
+                        p.rotation.y += this.deltaTime * 0.12;
+                    });
+                    this.renderer.render(this.scene, this.camera);
+                }
+
+                dispose() {
+                    this.clearWorld();
+                    this.renderer.dispose();
+                    this.scene.clear();
+                }
+            }
+
+            // ==================== WORLD BUILDER ====================
+            class WorldBuilder {
+                constructor(sm) {
+                    this.sm = sm;
+                    this.scene = sm.scene;
+                    this.envObjs = sm.environmentObjects;
+                    this.collidables = sm.collidableMeshes;
+                }
+
+                mat(col, rough = 0.85, metal = 0.05, emis = 0x000000) {
+                    return new THREE.MeshStandardMaterial({ color: col, roughness: rough, metalness: metal,
+                        emissive: emis });
+                }
+
+                addMesh(mesh, collidable = true) {
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    this.scene.add(mesh);
+                    this.envObjs.push(mesh);
+                    if (collidable) this.collidables.push(mesh);
+                    return mesh;
+                }
+
+                createGround(size = 200) {
+                    const g = new THREE.Mesh(new THREE.PlaneGeometry(size, size), this.mat(0x0d0d0d, 0.95, 0.02));
+                    g.rotation.x = -Math.PI / 2;
+                    g.position.y = -0.08;
+                    g.receiveShadow = true;
+                    g.name = 'ground';
+                    this.scene.add(g);
+                    this.envObjs.push(g);
+                    return g;
+                }
+
+                createTree(x, z, scale = 1) {
+                    const grp = new THREE.Group();
+                    const trunk = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.18 * scale, 0.35 * scale, 4.5 * scale, 8, 4),
+                        this.mat(0x1a0f05, 0.95, 0.03)
+                    );
+                    trunk.position.y = 2.25 * scale;
+                    trunk.castShadow = true;
+                    trunk.receiveShadow = true;
+                    grp.add(trunk);
+                    for (let i = 0; i < 3; i++) {
+                        const foliage = new THREE.Mesh(
+                            new THREE.ConeGeometry(1.3 * scale - i * 0.25, 2.8 * scale, 10, 5),
+                            this.mat(0x061006, 0.88, 0.04, 0x010201)
+                        );
+                        foliage.position.y = 4 * scale + i * 1.3 * scale;
+                        foliage.castShadow = true;
+                        foliage.receiveShadow = true;
+                        grp.add(foliage);
+                    }
+                    grp.position.set(x, 0, z);
+                    grp.rotation.y = Math.random() * Math.PI * 2;
+                    const s = 0.7 + Math.random() * 2;
+                    grp.scale.setScalar(s);
+                    this.scene.add(grp);
+                    this.envObjs.push(grp);
+                    const col = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.4 * s, 0.55 * s, 4.5 * s, 6),
+                        new THREE.MeshBasicMaterial({ visible: false })
+                    );
+                    col.position.copy(grp.position);
+                    col.position.y = 2.25 * s;
+                    col.name = 'tree_collider';
+                    this.collidables.push(col);
+                    this.envObjs.push(col);
+                    this.scene.add(col);
+                    return grp;
+                }
+
+                createCabin(x, z, ry = 0) {
+                    const grp = new THREE.Group();
+                    const walls = new THREE.Mesh(new THREE.BoxGeometry(5, 3.5, 6), this.mat(0x2a1a10, 0.9, 0.08));
+                    walls.position.y = 1.75;
+                    walls.castShadow = true;
+                    walls.receiveShadow = true;
+                    grp.add(walls);
+                    const roof = new THREE.Mesh(new THREE.ConeGeometry(4.5, 2.2, 4), this.mat(0x0f0503, 0.95, 0.04));
+                    roof.position.y = 4.1;
+                    roof.rotation.y = Math.PI / 4;
+                    roof.castShadow = true;
+                    grp.add(roof);
+                    grp.position.set(x, 0, z);
+                    grp.rotation.y = ry;
+                    this.scene.add(grp);
+                    this.envObjs.push(grp);
+                    this.collidables.push(grp);
+                    return grp;
+                }
+
+                createFortWall(x, z, w, h, d, ry = 0) {
+                    const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), this.mat(0x3a3a3a, 0.65, 0.35));
+                    wall.position.set(x, h / 2, z);
+                    wall.rotation.y = ry;
+                    this.addMesh(wall);
+                    return wall;
+                }
+
+                createTorch(x, y, z) {
+                    const grp = new THREE.Group();
+                    grp.add(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 2.2, 6), this.mat(0x3a2a1a, 0.9,
+                        0.1)));
+                    const flame = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8),
+                        new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xff4400,
+                            emissiveIntensity: 1.8, roughness: 0.25 }));
+                    flame.position.y = 2.2;
+                    flame.name = 'torch_flame';
+                    grp.add(flame);
+                    const light = new THREE.PointLight(0xff8833, 10, 14, 1.2);
+                    light.position.y = 2.2;
+                    light.castShadow = true;
+                    light.shadow.mapSize.set(128, 128);
+                    grp.add(light);
+                    grp.position.set(x, y, z);
+                    this.scene.add(grp);
+                    this.envObjs.push(grp);
+                    return grp;
+                }
+
+                createPumpkin(x, z, s = 1) {
+                    const grp = new THREE.Group();
+                    const bodyGeo = new THREE.SphereGeometry(0.5 * s, 14, 10);
+                    bodyGeo.scale(1, 0.65, 1);
+                    const body = new THREE.Mesh(bodyGeo, this.mat(0xff5c0a, 0.45, 0.05, 0x331100));
+                    body.position.y = 0.3 * s;
+                    body.castShadow = true;
+                    grp.add(body);
+                    grp.add(new THREE.Mesh(new THREE.CylinderGeometry(0.06 * s, 0.1 * s, 0.45 * s, 6), this.mat(0x2a5a0a,
+                        0.8, 0.1)));
+                    grp.children[1].position.y = 0.7 * s;
+                    grp.position.set(x, 0, z);
+                    grp.rotation.y = Math.random() * Math.PI * 2;
+                    this.scene.add(grp);
+                    this.envObjs.push(grp);
+                    return grp;
+                }
+
+                createClue(x, y, z, clueId) {
+                    const geo = new THREE.IcosahedronGeometry(0.25, 1);
+                    const mat = new THREE.MeshStandardMaterial({ color: 0xffcc44, emissive: 0x886600,
+                        emissiveIntensity: 2.5, roughness: 0.2, metalness: 0.6 });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.set(x, y, z);
+                    mesh.name = 'clue_' + clueId;
+                    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.04, 8, 16),
+                        new THREE.MeshBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.5,
+                            depthWrite: false }));
+                    ring.rotation.x = Math.PI / 2;
+                    mesh.add(ring);
+                    this.scene.add(mesh);
+                    this.envObjs.push(mesh);
+                    const clueData = { id: clueId, mesh, collected: false, position: new THREE.Vector3(x, y, z) };
+                    this.sm.clueObjects.push(clueData);
+                    return clueData;
+                }
+
+                createArtifact(x, y, z, artifactData) {
+                    const geo = new THREE.OctahedronGeometry(0.4, 1);
+                    const mat = new THREE.MeshStandardMaterial({ color: artifactData.color || 0xcc88ff,
+                        emissive: artifactData.emissive || 0x6644aa, emissiveIntensity: 3, roughness: 0.15,
+                        metalness: 0.7 });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.set(x, y, z);
+                    mesh.name = 'artifact_' + artifactData.id;
+                    const glowRing = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.05, 12, 24),
+                        new THREE.MeshBasicMaterial({ color: artifactData.color || 0xcc88ff, transparent: true,
+                            opacity: 0.55, depthWrite: false }));
+                    glowRing.rotation.x = Math.PI / 2;
+                    mesh.add(glowRing);
+                    this.scene.add(mesh);
+                    this.envObjs.push(mesh);
+                    const artObj = { ...artifactData, mesh, collected: false, position: new THREE.Vector3(x, y,
+                            z) };
+                    this.sm.artifactObjects.push(artObj);
+                    return artObj;
+                }
+
+                createFloatingParticles(color, count, radius, yBase = 1) {
+                    const geo = new THREE.BufferGeometry();
+                    const pos = new Float32Array(count * 3);
+                    for (let i = 0; i < count; i++) {
+                        pos[i * 3] = (Math.random() - 0.5) * radius;
+                        pos[i * 3 + 1] = yBase + Math.random() * 12;
+                        pos[i * 3 + 2] = (Math.random() - 0.5) * radius;
+                    }
+                    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                    const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: 0.13, transparent: true,
+                        opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
+                    pts.name = 'floating_particles';
+                    this.scene.add(pts);
+                    this.sm.particleSystems.push(pts);
+                    this.envObjs.push(pts);
+                    return pts;
+                }
+
+                buildForestArea() {
+                    this.createGround(200);
+                    for (let i = 0; i < 120; i++) {
+                        const x = (Math.random() - 0.5) * 140;
+                        const z = (Math.random() - 0.5) * 120;
+                        if (Math.abs(x) < 6 && Math.abs(z) < 6) continue;
+                        this.createTree(x, z, 0.5 + Math.random() * 2.2);
+                    }
+                    // Cabins
+                    this.createCabin(-18, -15, 0.4);
+                    this.createCabin(22, 18, -0.6);
+                    this.createCabin(-25, 22, 1.1);
+                    this.createCabin(16, -20, -0.3);
+                    // Graves
+                    for (let i = 0; i < 25; i++) {
+                        const gx = (Math.random() - 0.5) * 100;
+                        const gz = (Math.random() - 0.5) * 90;
+                        if (Math.abs(gx) < 5 && Math.abs(gz) < 5) continue;
+                        const grave = new THREE.Group();
+                        grave.add(new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.2, 0.25), this.mat(0x555555, 0.6,
+                            0.25)));
+                        grave.children[0].position.y = 1.1;
+                        grave.position.set(gx, 0, gz);
+                        grave.rotation.y = Math.random() * 0.5 - 0.25;
+                        this.scene.add(grave);
+                        this.envObjs.push(grave);
+                        this.collidables.push(grave);
+                    }
+                    // Rocks
+                    for (let i = 0; i < 30; i++) {
+                        const rx = (Math.random() - 0.5) * 100;
+                        const rz = (Math.random() - 0.5) * 90;
+                        const rock = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4 + Math.random() * 2.5, 1),
+                            this.mat(0x2a2a2a, 0.6, 0.35));
+                        rock.position.set(rx, 0.15, rz);
+                        this.addMesh(rock);
+                    }
+                    this.createFloatingParticles(0x443366, 60, 50, 2);
+                }
+
+                buildFortArea() {
+                    const cx = 0,
+                        cz = -45;
+                    this.createFortWall(cx, cz - 12, 28, 5.5, 1.3, 0);
+                    this.createFortWall(cx, cz + 12, 28, 5.5, 1.3, 0);
+                    this.createFortWall(cx - 14, cz, 1.3, 5.5, 24, 0);
+                    this.createFortWall(cx + 14, cz, 1.3, 5.5, 24, 0);
+                    for (const [tx, tz] of [
+                            [-14, cz - 12],
+                            [14, cz - 12],
+                            [-14, cz + 12],
+                            [14, cz + 12]
+                        ]) {
+                        const tower = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.8, 7, 8), this.mat(0x3a3a3a, 0.55,
+                            0.4));
+                        tower.position.set(tx, 3.5, tz);
+                        this.addMesh(tower);
+                    }
+                    for (let i = -10; i <= 10; i += 3) {
+                        this.createTorch(i, 0, cz - 11.5);
+                        this.createTorch(i, 0, cz + 11.5);
+                    }
+                    for (let i = -8; i <= 8; i += 3) {
+                        this.createTorch(-13.5, 0, cz + i);
+                        this.createTorch(13.5, 0, cz + i);
+                    }
+                    // Prison bars
+                    for (let i = 0; i < 10; i++) {
+                        const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 4.5, 6), this.mat(0x555555,
+                            0.35, 0.75));
+                        bar.position.set(9, 2.25, cz - 5 + i * 1.1);
+                        this.addMesh(bar);
+                    }
+                    // Chains
+                    for (let i = 0; i < 8; i++) {
+                        const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.5, 6), this.mat(0x777777,
+                            0.4, 0.8));
+                        chain.position.set(-8 + i * 2.5, 2.5, cz + 11);
+                        chain.castShadow = true;
+                        this.scene.add(chain);
+                        this.envObjs.push(chain);
+                    }
+                    this.createFloatingParticles(0x553322, 35, 25, 3);
+                }
+
+                buildHalloweenDistrict() {
+                    const dx = 40,
+                        dz = 10;
+                    const street = new THREE.Mesh(new THREE.PlaneGeometry(10, 70), this.mat(0x1a1a1a, 0.9, 0.08));
+                    street.rotation.x = -Math.PI / 2;
+                    street.position.set(dx, -0.04, dz);
+                    street.receiveShadow = true;
+                    this.scene.add(street);
+                    this.envObjs.push(street);
+                    for (let i = 0; i < 50; i++) {
+                        const px = dx + (Math.random() - 0.5) * 35;
+                        const pz = dz + (Math.random() - 0.5) * 55;
+                        if (Math.abs(px - dx) < 4 && Math.abs(pz - dz) < 3) continue;
+                        this.createPumpkin(px, pz, 0.4 + Math.random() * 1.8);
+                    }
+                    // Broken rides
+                    for (let i = 0; i < 4; i++) {
+                        const ride = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 4.5, 9, 8), this.mat(0x3a2030, 0.55,
+                            0.35, 0x110011));
+                        ride.position.set(dx - 10 + i * 10, 4.5, dz - 18 + i * 6);
+                        this.addMesh(ride);
+                    }
+                    // Colored lights
+                    const lightColors = [0xff4400, 0xff00ff, 0x00ff44, 0xffaa00, 0x8800ff];
+                    for (let i = 0; i < 15; i++) {
+                        const lt = new THREE.PointLight(lightColors[i % 5], 6, 10, 1.5);
+                        lt.position.set(dx + (Math.random() - 0.5) * 30, 2.5 + Math.random() * 6, dz + (Math.random() -
+                            0.5) * 40);
+                        this.scene.add(lt);
+                        this.envObjs.push(lt);
+                    }
+                    this.createFloatingParticles(0xff6600, 50, 30, 2.5);
+                }
+
+                placeCluesAndArtifacts() {
+                    // Clues across the world
+                    const clueDefs = [
+                        { id: 'clue_1', pos: [-10, 2.2, -8], chapter: 1, text: 'A torn journal page: "They came from the mist... I can still hear them."' },
+                        { id: 'clue_2', pos: [15, 1.8, 12], chapter: 1, text: 'Bloodstained locket with a faded photo. The face is scratched out.' },
+                        { id: 'clue_3', pos: [5, 2.5, -40], chapter: 2, text: 'Prisoner tally marks on the fort wall. Hundreds of marks.' },
+                        { id: 'clue_4', pos: [-5, 1.6, -42], chapter: 2, text: 'A rusted key labeled "CELL 13". It feels unnaturally cold.' },
+                        { id: 'clue_5', pos: [38, 2, 15], chapter: 3, text: 'Carnival ticket stub. The date is from 100 years ago.' },
+                        { id: 'clue_6', pos: [42, 2.3, -8], chapter: 3, text: 'Broken mirror shard. Your reflection looks... wrong.' },
+                        { id: 'clue_7', pos: [0, 2.8, -20], chapter: 4, text: 'Ancient symbol carved into a tree. It pulses with dark energy.' },
+                        { id: 'clue_8', pos: [-15, 1.9, 20], chapter: 5, text: 'A final letter: "The gate opens at midnight. God help us all."' },
+                    ];
+                    clueDefs.forEach(def => {
+                        if (!GameState.cluesFound.includes(def.id)) {
+                            this.createClue(def.pos[0], def.pos[1], def.pos[2], def.id);
+                        }
+                    });
+                    // Artifacts
+                    const artifactDefs = [
+                        { id: 'spirit_lantern', pos: [-20, 2.5, -12], name: 'Spirit Lantern',
+                            desc: 'Reveals hidden ghost trails.', rarity: 'RARE', color: 0x88ccff,
+                            emissive: 0x336699 },
+                        { id: 'cursed_mask', pos: [10, 3, -44], name: 'Cursed Mask',
+                            desc: 'Allows you to see through ghostly illusions.', rarity: 'EPIC', color: 0xcc8844,
+                            emissive: 0x664422 },
+                        { id: 'shadow_cloak', pos: [35, 2, -15], name: 'Shadow Cloak',
+                            desc: 'Reduces ghost detection range.', rarity: 'LEGENDARY', color: 0x222233,
+                            emissive: 0x111122 },
+                        { id: 'demon_key', pos: [-8, 1.8, -38], name: 'Demon Key',
+                            desc: 'Opens sealed doors in the fort.', rarity: 'RARE', color: 0xff4444,
+                            emissive: 0x882222 },
+                        { id: 'ghost_detector', pos: [45, 2.2, 12], name: 'Ghost Detector',
+                            desc: 'Pulses when ghosts are nearby.', rarity: 'COMMON', color: 0x44ff44,
+                            emissive: 0x228822 },
+                        { id: 'ancient_relic', pos: [0, 3.5, -35], name: 'Ancient Relic',
+                            desc: 'A piece of the original curse. Extremely powerful.', rarity: 'MYTHIC',
+                            color: 0xffdd00, emissive: 0xcc8800 },
+                    ];
+                    artifactDefs.forEach(def => {
+                        if (!GameState.artifactsCollected.includes(def.id)) {
+                            this.createArtifact(def.pos[0], def.pos[1], def.pos[2], def);
+                        }
+                    });
+                }
+            }
+
+            // ==================== GHOST ENTITY ====================
+            class GhostEntity {
+                constructor(sm, chapterDifficulty = 1) {
+                    this.sm = sm;
+                    this.scene = sm.scene;
+                    this.difficulty = chapterDifficulty;
+                    this.mesh = null;
+                    this.eyeLeft = null;
+                    this.eyeRight = null;
+                    this.trailParticles = null;
+                    this.state = 'watching'; // watching | stalking | chasing | attacking | retreating | vanished
+                    this.position = new THREE.Vector3();
+                    this.velocity = new THREE.Vector3();
+                    this.stalkTarget = new THREE.Vector3();
+                    this.stateTimer = 0;
+                    this.attackCooldown = 0;
+                    this.vanished = false;
+                    this.health = 50 + chapterDifficulty * 25;
+                    this.isAlive = true;
+                    this.floatPhase = Math.random() * Math.PI * 2;
+                    this.detectionRange = 18 + chapterDifficulty * 3;
+                    this.chaseSpeed = 3 + chapterDifficulty * 0.8;
+                    this.damage = 12 + chapterDifficulty * 5;
+                    this.buildGhostMesh();
+                    this.randomizePosition();
+                }
+
+                buildGhostMesh() {
+                    const grp = new THREE.Group();
+                    // Tall distorted body
+                    const bodyGeo = new THREE.CylinderGeometry(0.25, 0.5, 4.5, 10, 8);
+                    bodyGeo.applyMatrix4(new THREE.Matrix4().makeScale(1, 1.4, 0.7));
+                    const bodyMat = new THREE.MeshStandardMaterial({
+                        color: 0x888899,
+                        roughness: 0.25,
+                        metalness: 0.05,
+                        emissive: 0x111122,
+                        emissiveIntensity: 0.4,
+                        transparent: true,
+                        opacity: 0.5,
+                        depthWrite: false,
+                    });
+                    const body = new THREE.Mesh(bodyGeo, bodyMat);
+                    body.position.y = 3.2;
+                    body.name = 'ghost_body';
+                    grp.add(body);
+                    // Head - elongated
+                    const headGeo = new THREE.SphereGeometry(0.35, 12, 8);
+                    headGeo.applyMatrix4(new THREE.Matrix4().makeScale(0.8, 1.3, 0.85));
+                    const headMat = new THREE.MeshStandardMaterial({
+                        color: 0xbbbbcc,
+                        roughness: 0.2,
+                        emissive: 0x222244,
+                        emissiveIntensity: 0.5,
+                        transparent: true,
+                        opacity: 0.55,
+                        depthWrite: false,
+                    });
+                    const head = new THREE.Mesh(headGeo, headMat);
+                    head.position.y = 5.2;
+                    head.name = 'ghost_head';
+                    grp.add(head);
+                    // Hollow eye sockets
+                    const socketGeo = new THREE.SphereGeometry(0.12, 8, 8);
+                    const socketMat = new THREE.MeshBasicMaterial({ color: 0x000000, depthWrite: false });
+                    const socketL = new THREE.Mesh(socketGeo, socketMat);
+                    socketL.position.set(-0.1, 5.35, -0.28);
+                    grp.add(socketL);
+                    const socketR = new THREE.Mesh(socketGeo, socketMat);
+                    socketR.position.set(0.1, 5.35, -0.28);
+                    grp.add(socketR);
+                    // Glowing white pupils
+                    const pupilGeo = new THREE.SphereGeometry(0.06, 8, 8);
+                    const pupilMat = new THREE.MeshBasicMaterial({ color: 0xffffff, depthWrite: false,
+                        blending: THREE.AdditiveBlending });
+                    this.eyeLeft = new THREE.Mesh(pupilGeo, pupilMat);
+                    this.eyeLeft.position.copy(socketL.position);
+                    grp.add(this.eyeLeft);
+                    this.eyeRight = new THREE.Mesh(pupilGeo, pupilMat);
+                    this.eyeRight.position.copy(socketR.position);
+                    grp.add(this.eyeRight);
+                    // Glow orbs around eyes
+                    const glowGeo = new THREE.SphereGeometry(0.2, 8, 8);
+                    const glowMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7,
+                        depthWrite: false, blending: THREE.AdditiveBlending });
+                    const glowL = new THREE.Mesh(glowGeo, glowMat);
+                    glowL.position.copy(socketL.position);
+                    grp.add(glowL);
+                    const glowR = new THREE.Mesh(glowGeo, glowMat);
+                    glowR.position.copy(socketR.position);
+                    grp.add(glowR);
+                    // Distorted limbs
+                    for (let side = -1; side <= 1; side += 2) {
+                        const armGeo = new THREE.CylinderGeometry(0.06, 0.1, 2.8, 6);
+                        const arm = new THREE.Mesh(armGeo, bodyMat);
+                        arm.position.set(side * 0.4, 3.8, 0);
+                        arm.rotation.z = side * 0.5;
+                        arm.rotation.x = 0.4;
+                        grp.add(arm);
+                    }
+                    // Smoke trails
+                    const trailGeo = new THREE.BufferGeometry();
+                    const trailCount = 40;
+                    const trailPos = new Float32Array(trailCount * 3);
+                    for (let i = 0; i < trailCount; i++) {
+                        trailPos[i * 3] = (Math.random() - 0.5) * 2;
+                        trailPos[i * 3 + 1] = Math.random() * 5;
+                        trailPos[i * 3 + 2] = (Math.random() - 0.5) * 2;
+                    }
+                    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+                    this.trailParticles = new THREE.Points(trailGeo, new THREE.PointsMaterial({
+                        color: 0x777788,
+                        size: 0.1,
+                        transparent: true,
+                        opacity: 0.4,
+                        depthWrite: false,
+                        blending: THREE.AdditiveBlending,
+                    }));
+                    grp.add(this.trailParticles);
+                    grp.position.set(20, 1.5, 15);
+                    this.position.copy(grp.position);
+                    this.mesh = grp;
+                    this.scene.add(grp);
+                }
+
+                randomizePosition() {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 15 + Math.random() * 35;
+                    const x = Math.cos(angle) * dist;
+                    const z = Math.sin(angle) * dist;
+                    this.position.set(x, 1.5, z);
+                    if (this.mesh) this.mesh.position.copy(this.position);
+                    this.stalkTarget.set(x + (Math.random() - 0.5) * 25, 1.5, z + (Math.random() - 0.5) * 25);
+                }
+
+                update(deltaTime, playerPos, sm) {
+                    if (!this.isAlive || !this.mesh) return;
+                    const distToPlayer = this.position.distanceTo(playerPos);
+                    const inDarkness = !sm.flashlight.visible || distToPlayer > 25;
+                    // State transitions
+                    switch (this.state) {
+                        case 'watching':
+                            this.updateWatching(deltaTime, playerPos, distToPlayer, inDarkness);
+                            break;
+                        case 'stalking':
+                            this.updateStalking(deltaTime, playerPos, distToPlayer);
+                            break;
+                        case 'chasing':
+                            this.updateChasing(deltaTime, playerPos, distToPlayer);
+                            break;
+                        case 'attacking':
+                            this.updateAttacking(deltaTime, playerPos);
+                            break;
+                        case 'retreating':
+                            this.updateRetreating(deltaTime);
+                            break;
+                        case 'vanished':
+                            this.updateVanished(deltaTime, playerPos);
+                            break;
+                    }
+                    // Float animation
+                    if (this.mesh && this.state !== 'vanished') {
+                        const floatY = Math.sin(Date.now() * 0.003 + this.floatPhase) * 0.6;
+                        this.mesh.position.set(this.position.x, this.position.y + floatY, this.position.z);
+                        // Rotate eyes toward player
+                        if (this.eyeLeft && this.eyeRight && distToPlayer < 30) {
+                            const lookDir = new THREE.Vector3().subVectors(playerPos, this.position).normalize();
+                            const eyeTarget = this.position.clone().add(lookDir.multiplyScalar(3));
+                            this.eyeLeft.lookAt(eyeTarget);
+                            this.eyeRight.lookAt(eyeTarget);
+                        }
+                        // Trail rotation
+                        if (this.trailParticles) this.trailParticles.rotation.y += deltaTime * 2;
+                    }
+                    if (this.attackCooldown > 0) this.attackCooldown -= deltaTime;
+                    this.stateTimer -= deltaTime;
+                }
+
+                updateWatching(deltaTime, playerPos, dist, inDarkness) {
+                    // Watch from distance, occasionally vanish
+                    if (dist < this.detectionRange * 0.65 && inDarkness && Math.random() < 0.008) {
+                        this.state = 'stalking';
+                        this.stateTimer = 4 + Math.random() * 6;
+                    }
+                    if (Math.random() < 0.003) {
+                        this.state = 'vanished';
+                        this.stateTimer = 3 + Math.random() * 5;
+                        if (this.mesh) this.mesh.visible = false;
+                    }
+                }
+
+                updateStalking(deltaTime, playerPos, dist) {
+                    const dir = new THREE.Vector3().subVectors(playerPos, this.position).normalize();
+                    const stalkDist = 8 + Math.random() * 12;
+                    const targetPos = playerPos.clone().add(dir.multiplyScalar(-stalkDist));
+                    targetPos.y = 1.5;
+                    const moveDir = new THREE.Vector3().subVectors(targetPos, this.position);
+                    if (moveDir.length() > 0.5) {
+                        moveDir.normalize().multiplyScalar(this.chaseSpeed * 0.4 * deltaTime);
+                        this.position.add(moveDir);
+                    }
+                    if (dist < 4 && this.attackCooldown <= 0) {
+                        this.state = 'attacking';
+                        this.stateTimer = 1.5;
+                        this.attackCooldown = 3;
+                    }
+                    if (this.stateTimer <= 0) this.state = 'watching';
+                    if (Math.random() < 0.01 && dist < 6) {
+                        // Teleport behind player
+                        const behind = playerPos.clone().add(
+                            new THREE.Vector3().subVectors(this.position, playerPos).normalize().multiplyScalar(4)
+                        );
+                        behind.y = 1.5;
+                        this.position.copy(behind);
+                        audioManager.playGhostPresence();
+                        this.state = 'attacking';
+                        this.stateTimer = 1.5;
+                    }
+                }
+
+                updateChasing(deltaTime, playerPos, dist) {
+                    const dir = new THREE.Vector3().subVectors(playerPos, this.position).normalize();
+                    this.position.add(dir.multiplyScalar(this.chaseSpeed * deltaTime));
+                    if (dist < 2.5 && this.attackCooldown <= 0) {
+                        this.state = 'attacking';
+                        this.stateTimer = 1.2;
+                        this.attackCooldown = 3;
+                    }
+                    if (dist > this.detectionRange * 1.4) this.state = 'stalking';
+                }
+
+                updateAttacking(deltaTime, playerPos) {
+                    const dir = new THREE.Vector3().subVectors(playerPos, this.position).normalize();
+                    this.position.add(dir.multiplyScalar(this.chaseSpeed * 2.5 * deltaTime));
+                    if (this.position.distanceTo(playerPos) < 1.3 && typeof window._ghostAttack === 'function') {
+                        window._ghostAttack(this.damage, this.position);
+                        this.state = 'retreating';
+                        this.stateTimer = 3;
+                    }
+                    if (this.stateTimer <= 0) this.state = 'retreating';
+                }
+
+                updateRetreating(deltaTime) {
+                    const away = this.position.clone().normalize();
+                    this.position.add(away.multiplyScalar(this.chaseSpeed * 1.5 * deltaTime));
+                    if (this.stateTimer <= 0) this.state = 'watching';
+                }
+
+                updateVanished(deltaTime, playerPos) {
+                    if (this.stateTimer <= 0) {
+                        this.state = 'watching';
+                        if (this.mesh) this.mesh.visible = true;
+                        // Reappear somewhere near player
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = 8 + Math.random() * 20;
+                        this.position.set(
+                            playerPos.x + Math.cos(angle) * dist,
+                            1.5,
+                            playerPos.z + Math.sin(angle) * dist
+                        );
+                        if (this.mesh) this.mesh.position.copy(this.position);
+                        audioManager.playGhostPresence();
+                    }
+                }
+
+                takeDamage(amount) {
+                    this.health -= amount;
+                    if (this.health <= 0) { this.die(); } else { this.state = 'retreating';
+                        this.stateTimer = 4; }
+                }
+
+                die() {
+                    this.isAlive = false;
+                    if (this.mesh && this.mesh.parent) {
+                        // Death particle burst
+                        const burstGeo = new THREE.BufferGeometry();
+                        const bp = new Float32Array(50 * 3);
+                        for (let i = 0; i < 50; i++) {
+                            bp[i * 3] = this.position.x + (Math.random() - 0.5) * 4;
+                            bp[i * 3 + 1] = this.position.y + Math.random() * 5;
+                            bp[i * 3 + 2] = this.position.z + (Math.random() - 0.5) * 4;
+                        }
+                        burstGeo.setAttribute('position', new THREE.BufferAttribute(bp, 3));
+                        const burst = new THREE.Points(burstGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.25,
+                            transparent: true, opacity: 0.9, depthWrite: false,
+                            blending: THREE.AdditiveBlending }));
+                        burst.name = 'ghost_death';
+                        this.scene.add(burst);
+                        setTimeout(() => { this.scene.remove(burst);
+                            burstGeo.dispose();
+                            burst.material.dispose(); }, 1800);
+                        this.mesh.parent.remove(this.mesh);
+                    }
+                    this.mesh = null;
+                    GameState.ghostEncounters++;
+                }
+
+                dispose() {
+                    if (this.mesh) {
+                        if (this.mesh.parent) this.mesh.parent.remove(this.mesh);
+                        this.mesh.traverse(c => {
+                            if (c.geometry) c.geometry.dispose();
+                            if (c.material) {
+                                if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+                                else c.material.dispose();
+                            }
+                        });
+                    }
+                    this.isAlive = false;
+                }
+            }
+
+            // ==================== PLAYER CONTROLLER ====================
+            class PlayerController {
+                constructor(sm) {
+                    this.sm = sm;
+                    this.camera = sm.camera;
+                    this.position = new THREE.Vector3(0, 1.75, 8);
+                    this.velocity = new THREE.Vector3();
+                    this.euler = new THREE.Euler(0, 0, 0, 'YXZ');
+                    this.moveSpeed = 5.5;
+                    this.sprintMultiplier = 1.65;
+                    this.crouchMultiplier = 0.45;
+                    this.jumpForce = 7;
+                    this.gravity = 16;
+                    this.isGrounded = true;
+                    this.isSprinting = false;
+                    this.isCrouching = false;
+                    this.isJumping = false;
+                    this.keys = {};
+                    this.mouseSens = 0.0018;
+                    this.pitchClamp = Math.PI / 2.3;
+                    this.playerRadius = 0.45;
+                    this.playerHeight = 1.75;
+                    this.crouchHeight = 0.9;
+                    this.footstepTimer = 0;
+                    this.footstepCD = 0.5;
+                    this.breathAnimTimer = 0;
+                    this.shakeIntensity = 0;
+                    this.camera.position.copy(this.position);
+                    this.setupInput();
+                }
+
+                setupInput() {
+                    document.addEventListener('keydown', e => {
+                        this.keys[e.code] = true;
+                        if (e.code === 'KeyF' && GameState.isPlaying && !GameState.isPaused) {
+                            if (GameState.battery > 0) {
+                                GameState.flashlightOn = !GameState.flashlightOn;
+                                this.sm.flashlight.visible = GameState.flashlightOn;
+                            } else {
+                                GameState.flashlightOn = false;
+                                this.sm.flashlight.visible = false;
+                            }
+                        }
+                        if (e.code === 'Escape' && GameState.isPlaying) {
+                            if (!GameState.isPaused) {
+                                GameState.isPaused = true;
+                                document.exitPointerLock();
+                                document.getElementById('pause-menu').classList.remove('hidden');
+                                hudContainer.classList.add('hidden');
+                            }
+                        }
+                        if (e.code === 'Tab' && GameState.isPlaying && !GameState.isPaused) {
+                            e.preventDefault();
+                            document.exitPointerLock();
+                            document.getElementById('journal-modal').classList.remove('hidden');
+                            this.updateJournalUI();
+                            GameState.isPaused = true;
+                            hudContainer.classList.add('hidden');
+                        }
+                        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') this.isSprinting = true;
+                        if (e.code === 'ControlLeft' || e.code === 'ControlRight') this.isCrouching = true;
+                        if (e.code === 'Space' && this.isGrounded && GameState.isPlaying && !GameState
+                            .isPaused && !GameState.isDead) {
+                            this.velocity.y = this.jumpForce;
+                            this.isGrounded = false;
+                            this.isJumping = true;
+                        }
+                    });
+                    document.addEventListener('keyup', e => {
+                        this.keys[e.code] = false;
+                        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') this.isSprinting = false;
+                        if (e.code === 'ControlLeft' || e.code === 'ControlRight') this.isCrouching = false;
+                    });
+                    document.addEventListener('mousemove', e => {
+                        if (!GameState.isPlaying || GameState.isPaused || !document.pointerLockElement)
+                            return;
+                        this.euler.setFromQuaternion(this.camera.quaternion);
+                        this.euler.y -= e.movementX * this.mouseSens;
+                        this.euler.x -= e.movementY * this.mouseSens;
+                        this.euler.x = Math.max(-this.pitchClamp, Math.min(this.pitchClamp, this.euler.x));
+                        this.camera.quaternion.setFromEuler(this.euler);
+                    });
+                    canvas.addEventListener('click', () => {
+                        if (GameState.isPlaying && !GameState.isPaused && !GameState.isDead) {
+                            canvas.requestPointerLock();
+                        }
+                    });
+                }
+
+                update(deltaTime, collidables) {
+                    if (!GameState.isPlaying || GameState.isPaused || GameState.isDead) return;
+                    // Battery drain
+                    if (GameState.flashlightOn) {
+                        GameState.battery = Math.max(0, GameState.battery - 3.5 * deltaTime);
+                        if (GameState.battery <= 0) {
+                            GameState.flashlightOn = false;
+                            this.sm.flashlight.visible = false;
+                            this.showToast('Battery drained...');
+                        }
+                    } else {
+                        GameState.battery = Math.min(GameState.maxBattery, GameState.battery + 0.5 * deltaTime);
+                    }
+                    // Sanity drain in darkness
+                    const inLight = this.sm.flashlight.visible || this.isNearLightSource();
+                    if (!inLight) {
+                        GameState.timeInDarkness += deltaTime;
+                        GameState.sanity = Math.max(0, GameState.sanity - 2.5 * deltaTime);
+                    } else {
+                        GameState.timeInDarkness = Math.max(0, GameState.timeInDarkness - deltaTime * 2);
+                        GameState.sanity = Math.min(GameState.maxSanity, GameState.sanity + 1.5 * deltaTime);
+                    }
+                    // Stamina
+                    if (this.isSprinting && this.keys['KeyW']) {
+                        GameState.stamina = Math.max(0, GameState.stamina - 16 * deltaTime);
+                        if (GameState.stamina <= 0) this.isSprinting = false;
+                    } else {
+                        GameState.stamina = Math.min(GameState.maxStamina, GameState.stamina + 8 * deltaTime);
+                    }
+                    // Movement
+                    const fwd = new THREE.Vector3();
+                    this.camera.getWorldDirection(fwd);
+                    fwd.y = 0;
+                    fwd.normalize();
+                    const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0)).normalize();
+                    const moveDir = new THREE.Vector3();
+                    if (this.keys['KeyW']) moveDir.add(fwd);
+                    if (this.keys['KeyS']) moveDir.sub(fwd);
+                    if (this.keys['KeyA']) moveDir.sub(right);
+                    if (this.keys['KeyD']) moveDir.add(right);
+                    moveDir.normalize();
+                    let speed = this.moveSpeed;
+                    if (this.isSprinting && GameState.stamina > 0) speed *= this.sprintMultiplier;
+                    if (this.isCrouching) speed *= this.crouchMultiplier;
+                    moveDir.multiplyScalar(speed * deltaTime);
+                    // Gravity
+                    if (!this.isGrounded) this.velocity.y -= this.gravity * deltaTime;
+                    const vertMove = new THREE.Vector3(0, this.velocity.y * deltaTime, 0);
+                    const newPos = this.position.clone().add(moveDir).add(vertMove);
+                    // Collision
+                    for (const obj of collidables) {
+                        if (!obj || !obj.position) continue;
+                        const op = obj.position;
+                        let oRad = 1.5,
+                            oH = 4;
+                        if (obj.name === 'tree_collider') { oRad = 0.6;
+                            oH = 5; } else if (obj.geometry) {
+                            if (obj.geometry.type === 'BoxGeometry') {
+                                oRad = Math.max(obj.geometry.parameters.width || 1.5, obj.geometry.parameters
+                                    .depth || 1.5) / 2;
+                                oH = obj.geometry.parameters.height || 4;
+                            } else if (obj.geometry.type === 'CylinderGeometry') {
+                                oRad = (obj.geometry.parameters.radiusTop || 2) * 1.3;
+                                oH = obj.geometry.parameters.height || 7;
+                            }
+                        }
+                        const dx = newPos.x - op.x;
+                        const dz = newPos.z - op.z;
+                        const hDist = Math.sqrt(dx * dx + dz * dz);
+                        const minDist = this.playerRadius + oRad;
+                        if (hDist < minDist) {
+                            const pBot = newPos.y - this.playerHeight / 2;
+                            const pTop = newPos.y + this.playerHeight / 2;
+                            const oBot = op.y - oH / 2;
+                            const oTop = op.y + oH / 2;
+                            if (pTop > oBot && pBot < oTop) {
+                                const push = new THREE.Vector2(dx, dz).normalize();
+                                newPos.x = op.x + push.x * minDist;
+                                newPos.z = op.z + push.y * minDist;
+                            }
+                        }
+                    }
+                    if (newPos.y <= 0.05) {
+                        newPos.y = 0.05;
+                        this.velocity.y = 0;
+                        this.isGrounded = true;
+                        this.isJumping = false;
+                    } else { this.isGrounded = false; }
+                    this.position.copy(newPos);
+                    // Crouch height
+                    const targetHeight = this.isCrouching ? this.crouchHeight : this.playerHeight;
+                    this.camera.position.y = this.position.y + targetHeight;
+                    this.camera.position.x = this.position.x;
+                    this.camera.position.z = this.position.z;
+                    // Footsteps
+                    if (moveDir.length() > 0.001 && this.isGrounded) {
+                        this.footstepTimer -= deltaTime;
+                        if (this.footstepTimer <= 0) {
+                            audioManager.playFootstep();
+                            this.footstepTimer = this.footstepCD / (this.isSprinting ? 1.7 : 1);
+                            GameState.playerNoise = Math.min(100, GameState.playerNoise + 8);
+                        }
+                    } else { GameState.playerNoise = Math.max(0, GameState.playerNoise - 3 * deltaTime); }
+                    // Fear shake
+                    this.shakeIntensity = Math.max(0, this.shakeIntensity - deltaTime * 2);
+                    if (GameState.sanity < 30) {
+                        this.shakeIntensity = Math.max(this.shakeIntensity, (30 - GameState.sanity) / 30 * 0.08);
+                    }
+                    if (this.shakeIntensity > 0.001) {
+                        this.camera.position.x += (Math.random() - 0.5) * this.shakeIntensity;
+                        this.camera.position.y += (Math.random() - 0.5) * this.shakeIntensity * 0.6;
+                    }
+                    // Update UI bars
+                    heartbeatBar.style.width = (GameState.health / GameState.maxHealth * 100) + '%';
+                    sanityBar.style.width = (GameState.sanity / GameState.maxSanity * 100) + '%';
+                    batteryBar.style.width = (GameState.battery / GameState.maxBattery * 100) + '%';
+                    // Fear indicator
+                    const nearbyGhost = this.sm.ghosts.some(g => g.isAlive && g.mesh && this.position
+                        .distanceTo(g.position) < 12 && g.state !== 'vanished');
+                    if (nearbyGhost && !this.sm.flashlight.visible) {
+                        fearIndicator.classList.remove('hidden');
+                    } else { fearIndicator.classList.add('hidden'); }
+                    // Check interactions
+                    this.checkProximity();
+                    // Game time
+                    GameState.gameTime += deltaTime;
+                    // Heartbeat sound when low sanity
+                    if (GameState.sanity < 25 && Math.random() < 0.02) audioManager.playHeartbeat();
+                    // Whisper sounds
+                    if (GameState.sanity < 40 && Math.random() < 0.004) audioManager.playWhisper();
+                }
+
+                isNearLightSource() {
+                    for (const obj of this.sm.environmentObjects) {
+                        if (obj.isPointLight && this.position.distanceTo(obj.position) < 12) return true;
+                        if (obj.name === 'torch_flame' && this.position.distanceTo(obj.parent.position) < 10)
+                            return true;
+                    }
+                    return false;
+                }
+
+                checkProximity() {
+                    let nearInteractable = false;
+                    // Clues
+                    for (const clue of this.sm.clueObjects) {
+                        if (clue.collected) continue;
+                        if (this.position.distanceTo(clue.position) < 2.8) {
+                            nearInteractable = true;
+                            if (this.keys['KeyE']) {
+                                this.collectClue(clue);
+                                this.keys['KeyE'] = false;
+                            }
+                            break;
+                        }
+                    }
+                    // Artifacts
+                    if (!nearInteractable) {
+                        for (const art of this.sm.artifactObjects) {
+                            if (art.collected) continue;
+                            if (this.position.distanceTo(art.position) < 3) {
+                                nearInteractable = true;
+                                if (this.keys['KeyE']) {
+                                    this.discoverArtifact(art);
+                                    this.keys['KeyE'] = false;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    if (nearInteractable) interactHint.classList.remove('hidden');
+                    else interactHint.classList.add('hidden');
+                }
+
+                collectClue(clue) {
+                    clue.collected = true;
+                    clue.mesh.visible = false;
+                    GameState.cluesFound.push(clue.id);
+                    GameState.totalCluesDiscovered++;
+                    audioManager.playArtifactDiscovery();
+                    this.showToast('Clue discovered! Check your journal [TAB]');
+                    this.updateJournalUI();
+                    // Check chapter progression
+                    this.checkChapterProgression(clue.id);
+                    cluesDisplay.textContent = GameState.totalCluesDiscovered;
+                    SaveSystem.save();
+                }
+
+                discoverArtifact(art) {
+                    art.collected = true;
+                    art.mesh.visible = false;
+                    GameState.artifactsCollected.push(art.id);
+                    audioManager.playArtifactDiscovery();
+                    // Show discovery modal
+                    document.getElementById('discovery-artifact-icon').textContent = art.rarity === 'MYTHIC' ?
+                        '💀' : art.rarity === 'LEGENDARY' ? '👑' : art.rarity === 'EPIC' ? '✨' : art.rarity ===
+                        'RARE' ? '🔮' : '💡';
+                    document.getElementById('discovery-artifact-name').textContent = art.name;
+                    document.getElementById('discovery-artifact-rarity').textContent = '✦ ' + art.rarity +
+                        ' ✦';
+                    document.getElementById('discovery-artifact-desc').textContent = art.desc;
+                    document.getElementById('artifact-discovery-modal').classList.remove('hidden');
+                    document.exitPointerLock();
+                    GameState.isPaused = true;
+                    hudContainer.classList.add('hidden');
+                    // Particles
+                    const container = document.getElementById('discovery-particles');
+                    container.innerHTML = '';
+                    for (let i = 0; i < 25; i++) {
+                        const p = document.createElement('div');
+                        p.className = 'absolute w-2 h-2 rounded-full';
+                        p.style.cssText = `
+                  background:${['#ffd700','#ff6bff','#00ffcc','#ff4444','#ffffff'][Math.floor(Math.random()*5)]};
+                  left:${50+(Math.random()-0.5)*70}%;
+                  top:${50+(Math.random()-0.5)*70}%;
+                  animation:particleBurst ${1+Math.random()*2}s ease-out forwards;
+                  animation-delay:${Math.random()*0.5}s;
+                `;
+                        container.appendChild(p);
+                    }
+                    SaveSystem.save();
+                }
+
+                checkChapterProgression(clueId) {
+                    const clueChapterMap = {
+                        'clue_1': 1,
+                        'clue_2': 1,
+                        'clue_3': 2,
+                        'clue_4': 2,
+                        'clue_5': 3,
+                        'clue_6': 3,
+                        'clue_7': 4,
+                        'clue_8': 5
+                    };
+                    const chapter = clueChapterMap[clueId];
+                    if (chapter && chapter > GameState.currentChapter && !GameState.unlockedChapters.includes(
+                            chapter)) {
+                        GameState.unlockedChapters.push(chapter);
+                        GameState.currentChapter = chapter;
+                        const chapterNames = ['', 'The Awakening', 'The Missing Souls', 'The Cursed Fort',
+                            'The Halloween Gate', 'The Final Possession'
+                        ];
+                        document.getElementById('chapter-reveal-title').textContent = 'Chapter ' + chapter +
+                            ': ' + chapterNames[chapter];
+                        document.getElementById('chapter-reveal-desc').textContent = chapter === 2 ?
+                            'The fort holds secrets of the vanished...' : chapter === 3 ?
+                            'Something ancient stirs within the stone walls.' : chapter === 4 ?
+                            'The carnival masks a darker truth.' : chapter === 5 ?
+                            'All paths lead to the final confrontation.' :
+                            'You have begun to understand the curse.';
+                        document.getElementById('chapter-reveal-modal').classList.remove('hidden');
+                        document.exitPointerLock();
+                        GameState.isPaused = true;
+                        hudContainer.classList.add('hidden');
+                        chapterDisplay.textContent = romanNumeral(chapter);
+                        audioManager.playArtifactDiscovery();
+                    }
+                }
+
+                updateJournalUI() {
+                    const entries = GameState.cluesFound.map(id => {
+                        const clueDefs = [
+                            { id: 'clue_1', text: 'A torn journal page: "They came from the mist... I can still hear them."' },
+                            { id: 'clue_2', text: 'Bloodstained locket with a faded photo. The face is scratched out.' },
+                            { id: 'clue_3', text: 'Prisoner tally marks on the fort wall. Hundreds of marks.' },
+                            { id: 'clue_4', text: 'A rusted key labeled "CELL 13". It feels unnaturally cold.' },
+                            { id: 'clue_5', text: 'Carnival ticket stub. The date is from 100 years ago.' },
+                            { id: 'clue_6', text: 'Broken mirror shard. Your reflection looks... wrong.' },
+                            { id: 'clue_7', text: 'Ancient symbol carved into a tree. It pulses with dark energy.' },
+                            { id: 'clue_8', text: 'A final letter: "The gate opens at midnight. God help us all."' },
+                        ];
+                        const found = clueDefs.find(d => d.id === id);
+                        return found ? found.text : 'Unknown clue';
+                    });
+                    if (entries.length === 0) {
+                        journalEntries.innerHTML =
+                            '<p class="text-gray-500 italic">No clues discovered yet... Explore the world.</p>';
+                    } else {
+                        journalEntries.innerHTML = entries.map((t, i) =>
+                            `<div class="bg-black/30 rounded-lg p-3 border border-gray-700/30"><span class="text-amber-400 text-xs font-ui">CLUE ${i+1}</span><p class="text-gray-200 text-sm mt-1 font-journal italic">${t}</p></div>`
+                        ).join('');
+                    }
+                }
+
+                takeDamage(amount) {
+                    GameState.health = Math.max(0, GameState.health - amount);
+                    heartbeatBar.style.width = (GameState.health / GameState.maxHealth * 100) + '%';
+                    bloodVignette.style.opacity = '1';
+                    setTimeout(() => { bloodVignette.style.opacity = '0'; }, 500);
+                    this.shakeIntensity = 0.2;
+                    if (GameState.health <= 0) { window._onPlayerDeath(); }
+                }
+
+                showToast(msg) {
+                    const toast = document.createElement('div');
+                    toast.className = 'toast-notify';
+                    toast.textContent = msg;
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 3500);
+                }
+
+                reset(pos = new THREE.Vector3(0, 1.75, 8)) {
+                    this.position.copy(pos);
+                    this.velocity.set(0, 0, 0);
+                    this.camera.position.copy(pos);
+                    this.euler.set(0, 0, 0, 'YXZ');
+                    this.camera.quaternion.setFromEuler(this.euler);
+                    this.isGrounded = true;
+                    this.isJumping = false;
+                    this.isCrouching = false;
+                    this.isSprinting = false;
+                    this.shakeIntensity = 0;
+                    GameState.health = GameState.maxHealth;
+                    GameState.sanity = GameState.maxSanity;
+                    GameState.stamina = GameState.maxStamina;
+                    GameState.battery = GameState.maxBattery;
+                    GameState.flashlightOn = false;
+                    this.sm.flashlight.visible = false;
+                    GameState.isDead = false;
+                    GameState.isPaused = false;
+                    GameState.timeInDarkness = 0;
+                    GameState.playerNoise = 0;
+                    bloodVignette.style.opacity = '0';
+                    heartbeatBar.style.width = '100%';
+                    sanityBar.style.width = '100%';
+                    batteryBar.style.width = '100%';
+                    document.getElementById('death-screen').classList.add('hidden');
+                    document.getElementById('pause-menu').classList.add('hidden');
+                    interactHint.classList.add('hidden');
+                    fearIndicator.classList.add('hidden');
+                }
+            }
+
+            function romanNumeral(n) {
+                const r = ['', 'I', 'II', 'III', 'IV', 'V'];
+                return r[n] || n.toString();
+            }
+
+            // ==================== UI MANAGER ====================
+            class UIManager {
+                constructor() {
+                    this.setupButtons();
+                }
+
+                setupButtons() {
+                    document.getElementById('btn-start').addEventListener('click', () => this.startNewGame());
+                    document.getElementById('btn-continue-save').addEventListener('click', () => this
+                        .continueGame());
+                    document.getElementById('btn-artifact-collection').addEventListener('click', () => this
+                        .openArtifactCollection());
+                    document.getElementById('btn-how-to-play').addEventListener('click', () => {
+                        document.getElementById('how-to-play-modal').classList.remove('hidden');
+                    });
+                    document.getElementById('btn-close-how').addEventListener('click', () => {
+                        document.getElementById('how-to-play-modal').classList.add('hidden');
+                    });
+                    document.getElementById('btn-resume').addEventListener('click', () => this.resumeGame());
+                    document.getElementById('btn-quit-menu').addEventListener('click', () => this
+                    .quitToMenu());
+                    document.getElementById('btn-close-journal').addEventListener('click', () => this
+                        .closeJournal());
+                    document.getElementById('btn-close-artifacts').addEventListener('click', () => {
+                        document.getElementById('artifact-modal').classList.add('hidden');
+                    });
+                    document.getElementById('btn-collect-artifact').addEventListener('click', () => {
+                        document.getElementById('artifact-discovery-modal').classList.add('hidden');
+                        this.resumeGame();
+                    });
+                    document.getElementById('btn-continue-chapter').addEventListener('click', () => {
+                        document.getElementById('chapter-reveal-modal').classList.add('hidden');
+                        this.resumeGame();
+                    });
+                    document.getElementById('btn-retry').addEventListener('click', () => this.retryGame());
+                }
+
+                startNewGame() {
+                    SaveSystem.reset();
+                    this.launchGame();
+                }
+
+                continueGame() {
+                    if (SaveSystem.load()) {
+                        this.launchGame();
+                    } else {
+                        this.startNewGame();
+                    }
+                }
+
+                launchGame() {
+                    audioManager.init();
+                    mainMenu.classList.add('hidden');
+                    loadingScreen.classList.remove('hidden');
+                    loadingBarFill.style.width = '0%';
+                    loadingStatus.textContent = 'Summoning shadows...';
+                    let prog = 0;
+                    const loadSim = setInterval(() => {
+                        prog += Math.random() * 18;
+                        if (prog >= 100) {
+                            prog = 100;
+                            clearInterval(loadSim);
+                            loadingBarFill.style.width = '100%';
+                            loadingStatus.textContent = 'The darkness awaits...';
+                            setTimeout(() => {
+                                loadingScreen.classList.add('hidden');
+                                this.beginPlay();
+                            }, 700);
+                        } else {
+                            loadingBarFill.style.width = prog + '%';
+                            const msgs = ['Generating forest...', 'Raising the dead...',
+                                'Summoning ghosts...', 'Darkening skies...',
+                                'Whispering secrets...'
+                            ];
+                            loadingStatus.textContent = msgs[Math.floor(Math.random() * msgs
+                                .length)];
+                        }
+                    }, 180);
+                }
+
+                beginPlay() {
+                    GameState.isPlaying = true;
+                    GameState.isPaused = false;
+                    GameState.isDead = false;
+                    GameState.health = GameState.maxHealth;
+                    GameState.sanity = GameState.maxSanity;
+                    GameState.stamina = GameState.maxStamina;
+                    GameState.battery = GameState.maxBattery;
+                    GameState.flashlightOn = false;
+                    GameState.timeInDarkness = 0;
+                    GameState.playerNoise = 0;
+                    hudContainer.classList.remove('hidden');
+                    crosshair.style.display = 'block';
+                    chapterDisplay.textContent = romanNumeral(GameState.currentChapter);
+                    cluesDisplay.textContent = GameState.totalCluesDiscovered;
+                    heartbeatBar.style.width = '100%';
+                    sanityBar.style.width = '100%';
+                    batteryBar.style.width = '100%';
+                    interactHint.classList.add('hidden');
+                    fearIndicator.classList.add('hidden');
+                    bloodVignette.style.opacity = '0';
+                    window._sceneManager.generateOpenWorld();
+                    window._playerController.reset(new THREE.Vector3(0, 1.75, 8));
+                    audioManager.playAmbientDrone(36, 7);
+                    setTimeout(() => canvas.requestPointerLock(), 400);
+                    // Update artifact grid
+                    this.updateArtifactGrid();
+                }
+
+                resumeGame() {
+                    GameState.isPaused = false;
+                    document.getElementById('pause-menu').classList.add('hidden');
+                    document.getElementById('journal-modal').classList.add('hidden');
+                    document.getElementById('artifact-modal').classList.add('hidden');
+                    document.getElementById('artifact-discovery-modal').classList.add('hidden');
+                    document.getElementById('chapter-reveal-modal').classList.add('hidden');
+                    hudContainer.classList.remove('hidden');
+                    crosshair.style.display = 'block';
+                    setTimeout(() => canvas.requestPointerLock(), 200);
+                }
+
+                quitToMenu() {
+                    GameState.isPlaying = false;
+                    GameState.isPaused = false;
+                    GameState.isDead = false;
+                    document.getElementById('pause-menu').classList.add('hidden');
+                    document.getElementById('death-screen').classList.add('hidden');
+                    document.getElementById('journal-modal').classList.add('hidden');
+                    document.getElementById('artifact-modal').classList.add('hidden');
+                    document.getElementById('artifact-discovery-modal').classList.add('hidden');
+                    document.getElementById('chapter-reveal-modal').classList.add('hidden');
+                    mainMenu.classList.remove('hidden');
+                    hudContainer.classList.add('hidden');
+                    crosshair.style.display = 'none';
+                    bloodVignette.style.opacity = '0';
+                    document.exitPointerLock();
+                    audioManager.stopAmbient();
+                    window._sceneManager.clearWorld();
+                    SaveSystem.save();
+                    // Update continue button
+                    if (SaveSystem.hasSave()) {
+                        btnContinueSave.classList.remove('hidden');
+                    }
+                }
+
+                closeJournal() {
+                    document.getElementById('journal-modal').classList.add('hidden');
+                    this.resumeGame();
+                }
+
+                openArtifactCollection() {
+                    this.updateArtifactGrid();
+                    document.getElementById('artifact-modal').classList.remove('hidden');
+                }
+
+                updateArtifactGrid() {
+                    const allArtifacts = [
+                        { id: 'spirit_lantern', name: 'Spirit Lantern', rarity: 'RARE', icon: '🔮' },
+                        { id: 'cursed_mask', name: 'Cursed Mask', rarity: 'EPIC', icon: '🎭' },
+                        { id: 'shadow_cloak', name: 'Shadow Cloak', rarity: 'LEGENDARY', icon: '🌑' },
+                        { id: 'demon_key', name: 'Demon Key', rarity: 'RARE', icon: '🗝️' },
+                        { id: 'ghost_detector', name: 'Ghost Detector', rarity: 'COMMON', icon: '📡' },
+                        { id: 'ancient_relic', name: 'Ancient Relic', rarity: 'MYTHIC', icon: '💀' },
+                    ];
+                    const collected = GameState.artifactsCollected;
+                    if (collected.length === 0) {
+                        artifactGrid.innerHTML =
+                            '<p class="col-span-3 text-gray-500 italic text-sm">No artifacts found... Explore the world to discover them.</p>';
+                    } else {
+                        artifactGrid.innerHTML = allArtifacts.filter(a => collected.includes(a.id)).map(a => `
+                  <div class="bg-black/40 rounded-xl p-3 border border-amber-700/30 text-center artifact-glow">
+                    <span class="text-3xl">${a.icon}</span>
+                    <p class="text-xs font-bold text-spectral mt-1">${a.name}</p>
+                    <p class="text-[10px] text-amber-400">${a.rarity}</p>
+                  </div>`).join('');
+                        if (collected.length < allArtifacts.length) {
+                            artifactGrid.innerHTML +=
+                                `<p class="col-span-3 text-gray-600 text-xs mt-2">${allArtifacts.length - collected.length} more to discover...</p>`;
+                        }
+                    }
+                }
+
+                showDeathScreen() {
+                    GameState.isDead = true;
+                    GameState.isPlaying = false;
+                    document.getElementById('death-screen').classList.remove('hidden');
+                    document.getElementById('death-hint').textContent = GameState.currentChapter >= 5 ?
+                        'You were so close to the truth...' : 'The story continues...';
+                    hudContainer.classList.add('hidden');
+                    crosshair.style.display = 'none';
+                    document.exitPointerLock();
+                    audioManager.playJumpScare();
+                    audioManager.stopAmbient();
+                    SaveSystem.save();
+                }
+
+                retryGame() {
+                    document.getElementById('death-screen').classList.add('hidden');
+                    GameState.isDead = false;
+                    this.beginPlay();
+                }
+
+                showToast(msg) {
+                    const toast = document.createElement('div');
+                    toast.className = 'toast-notify';
+                    toast.textContent = msg;
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 3500);
+                }
+            }
+
+            // ==================== GLOBAL CALLBACKS ====================
+            window._ghostAttack = function(damage, ghostPos) {
+                if (!GameState.isPlaying || GameState.isDead) return;
+                window._playerController.takeDamage(damage);
+                audioManager.playJumpScare();
+                // Camera shake
+                const cam = window._sceneManager.camera;
+                const orig = cam.position.clone();
+                const startT = Date.now();
+                const dur = 350;
+
+                function shake() {
+                    const el = Date.now() - startT;
+                    if (el < dur) {
+                        const d = 1 - el / dur;
+                        cam.position.x = orig.x + (Math.random() - 0.5) * 0.4 * d;
+                        cam.position.y = orig.y + (Math.random() - 0.5) * 0.35 * d;
+                        requestAnimationFrame(shake);
+                    } else { cam.position.copy(orig); }
+                }
+                shake();
+            };
+
+            window._onPlayerDeath = function() {
+                window._uiManager.showDeathScreen();
+            };
+
+            // ==================== INITIALIZATION ====================
+            function init() {
+                const hasSave = SaveSystem.hasSave();
+                if (hasSave) {
+                    SaveSystem.load();
+                    btnContinueSave.classList.remove('hidden');
+                }
+
+                const sm = new SceneManager().init();
+                window._sceneManager = sm;
+
+                const pc = new PlayerController(sm);
+                window._playerController = pc;
+
+                const uim = new UIManager();
+                window._uiManager = uim;
+
+                loadingScreen.classList.add('hidden');
+                mainMenu.classList.remove('hidden');
+                hudContainer.classList.add('hidden');
+                crosshair.style.display = 'none';
+
+                // Game loop
+                function loop() {
+                    requestAnimationFrame(loop);
+                    if (GameState.isPlaying && !GameState.isPaused && !GameState.isDead) {
+                        pc.update(sm.deltaTime, sm.collidableMeshes);
+                        // Random ghost spawn based on fear factors
+                        const fearScore = (100 - GameState.sanity) + GameState.timeInDarkness * 0.5 + GameState
+                            .playerNoise * 0.3;
+                        if (fearScore > 50 && Math.random() < 0.0008 * (fearScore / 50) && sm.ghosts.length < 12) {
+                            const ghost = new GhostEntity(sm, GameState.currentChapter);
+                            sm.ghosts.push(ghost);
+                        }
+                        // Ghost whispers
+                        if (sm.ghosts.some(g => g.isAlive && g.mesh && pc.position.distanceTo(g.position) < 15 && g
+                                .state !== 'vanished')) {
+                            if (Math.random() < 0.006) audioManager.playWhisper();
+                        }
+                    }
+                    sm.render();
+                }
+                loop();
+
+                setInterval(() => {
+                    if (GameState.isPlaying) SaveSystem.save();
+                }, 45000);
+
+                console.log('%c👻 GHOST CITY ESCAPE %c| Psychological Horror Engine',
+                    'font-size:22px;color:#c8d0e0;font-weight:bold;', 'color:#8844cc;');
+                console.log('%cOpen World | Story Chapters | Terrifying Ghost AI | Artifact System',
+                    'color:#888;');
+                console.log('%cChapter ' + GameState.currentChapter + ' | Clues: ' + GameState
+                    .totalCluesDiscovered + ' | Artifacts: ' + GameState.artifactsCollected.length,
+                    'color:#aaa;');
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+            // Expose for debug
+            window.GameState = GameState;
+            window.SaveSystem = SaveSystem;
+            window.audioManager = audioManager;
+
+            console.log('%c🎃 Ghost City Escape v2.0 %cReady — Enter if you dare.',
+                'color:#ff5c0a;font-size:16px;', 'color:#ccc;');
+
+            // Add particle burst keyframe dynamically
+            const styleSheet = document.createElement('style');
+            styleSheet.textContent = `
+            @keyframes particleBurst {
+              0% { transform: translate(0,0) scale(1); opacity:1; }
+              100% { transform: translate(${Math.random()*100-50}px, ${Math.random()*100-50}px) scale(0); opacity:0; }
+            }
+          `;
+            document.head.appendChild(styleSheet);
+        })();
+    </script>
+</body>
+</html>
